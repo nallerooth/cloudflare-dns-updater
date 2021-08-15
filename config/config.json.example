@@ -1,0 +1,6 @@
+{
+	"api_token": "abc123abc123abc123abc123abc123abc123a",
+	"email":    "your.email@domain.com",
+	"zone_id":   "abc123abc123abc123abc123abc123ab",
+	"zone_name": "your.domain.com"
+}
