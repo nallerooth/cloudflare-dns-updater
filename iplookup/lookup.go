@@ -4,12 +4,12 @@ import (
 	"io"
 	"net/http"
 	"regexp"
+
+	"nallerooth.com/config"
 )
 
-const IPLookupURL = "https://nallerooth.com/ip.php"
-
-func fetchPage() ([]byte, error) {
-	req, err := http.Get(IPLookupURL)
+func fetchPage(c *config.Config) ([]byte, error) {
+	req, err := http.Get(c.IPLookupURL)
 	if err != nil {
 		return nil, err
 	}
@@ -30,8 +30,8 @@ func verifyIPv4Addr(body []byte) (string, error) {
 	return string(ip), nil
 }
 
-func GetExternalIPv4Address() (string, error) {
-	body, err := fetchPage()
+func GetExternalIPv4Address(c *config.Config) (string, error) {
+	body, err := fetchPage(c)
 	if err != nil {
 		return "", err
 	}

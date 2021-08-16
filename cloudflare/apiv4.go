@@ -6,16 +6,11 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+
+	"nallerooth.com/config"
 )
 
 const baseURL = "https://api.cloudflare.com/client/v4/"
-
-type Config struct {
-	APIToken string `json:"api_token"`
-	Email    string `json:"email"`
-	ZoneID   string `json:"zone_id"`
-	ZoneName string `json:"zone_name"`
-}
 
 type APIError struct {
 	Code    int
@@ -42,7 +37,7 @@ type DNSEntry struct {
 	}
 }
 
-func newRequest(method string, reqURL *url.URL, c *Config) *http.Request {
+func newRequest(method string, reqURL *url.URL, c *config.Config) *http.Request {
 	req := &http.Request{
 		Method: method,
 		URL:    reqURL,
@@ -55,7 +50,7 @@ func newRequest(method string, reqURL *url.URL, c *Config) *http.Request {
 	return req
 }
 
-func GetDNSEntry(c *Config) (*DNSEntry, error) {
+func GetDNSEntry(c *config.Config) (*DNSEntry, error) {
 	path := fmt.Sprintf("zones/%s/dns_records?name=%s", c.ZoneID, c.ZoneName)
 
 	apiURL, err := url.Parse(baseURL + path)
@@ -86,6 +81,6 @@ func GetDNSEntry(c *Config) (*DNSEntry, error) {
 	return entry, nil
 }
 
-func UpdateDNSEntry(c *Config, ip string) (bool, error) {
+func UpdateDNSEntry(c *config.Config, ip string) (bool, error) {
 	return false, nil
 }

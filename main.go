@@ -9,10 +9,11 @@ import (
 	"strings"
 
 	cf "nallerooth.com/cloudflare"
+	"nallerooth.com/config"
 	"nallerooth.com/iplookup"
 )
 
-func loadConfig(filename string) (*cf.Config, error) {
+func loadConfig(filename string) (*config.Config, error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -24,7 +25,7 @@ func loadConfig(filename string) (*cf.Config, error) {
 		return nil, err
 	}
 
-	c := &cf.Config{}
+	c := &config.Config{}
 	err = json.Unmarshal(contents, c)
 	if err != nil {
 		return nil, err
@@ -44,19 +45,19 @@ func compareIPAddrs(ip string, entry *cf.DNSEntry) bool {
 }
 
 func main() {
-	cfConfig, err := loadConfig("./config/config.json")
+	conf, err := loadConfig("./config.json")
 	if err != nil {
 		log.Fatalln("Unable to load config file")
 	}
 
-	ip, err := iplookup.GetExternalIPv4Address()
+	ip, err := iplookup.GetExternalIPv4Address(conf)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to get external IP address: %s", err)
 	}
 
 	fmt.Println("External IP Address", ip)
 
-	dnsEntries, err := cf.GetDNSEntry(cfConfig)
+	dnsEntries, err := cf.GetDNSEntry(conf)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s", err)
 	}
@@ -67,6 +68,6 @@ func main() {
 		log.Println("Correct IP address in DNS record. Going to sleep..")
 	} else {
 		log.Println("Cloudflare IP does not match external IP -> Updating CF to", ip)
-		cf.UpdateDNSEntry(cfConfig, ip)
+		cf.UpdateDNSEntry(conf, ip)
 	}
 }
