@@ -1,11 +1,14 @@
 package cloudflare
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"nallerooth.com/config"
 )
@@ -22,35 +25,44 @@ func (ae APIError) String() string {
 }
 
 type APIResponse struct {
-	Success  bool
+	Count    int
 	Errors   []APIError
 	Messages []string
+	Success  bool
 }
 
-type DNSEntry struct {
+type DNSRecordDetails struct {
+	ID      string
+	Content string
+	Name    string
+	Proxied bool
+	TTL     int
+	Type    string
+}
+
+type ZoneResponse struct {
 	APIResponse
-
-	Result []struct {
-		Content string
-		Name    string
-		Type    string
-	}
+	Result []DNSRecordDetails
 }
 
-func newRequest(method string, reqURL *url.URL, c *config.Config) *http.Request {
-	req := &http.Request{
-		Method: method,
-		URL:    reqURL,
-		Header: http.Header{},
+func newRequest(method string, reqURL *url.URL, data []byte, c *config.Config) (*http.Request, error) {
+	req, err := http.NewRequest(method, reqURL.String(), bytes.NewBuffer(data))
+	if err != nil {
+		return nil, err
 	}
+	//req := &http.Request{
+	//Method: method,
+	//URL:    reqURL,
+	//Header: http.Header{},
+	//}
 	req.Header.Add("X-Auth-Email", c.Email)
 	req.Header.Add("X-Auth-Key", c.APIToken)
 	req.Header.Add("ContentType", "application/json")
 
-	return req
+	return req, nil
 }
 
-func GetDNSEntry(c *config.Config) (*DNSEntry, error) {
+func GetDNSEntry(c *config.Config) (*DNSRecordDetails, error) {
 	path := fmt.Sprintf("zones/%s/dns_records?name=%s", c.ZoneID, c.ZoneName)
 
 	apiURL, err := url.Parse(baseURL + path)
@@ -58,7 +70,11 @@ func GetDNSEntry(c *config.Config) (*DNSEntry, error) {
 		return nil, err
 	}
 
-	req := newRequest("GET", apiURL, c)
+	req, err := newRequest("GET", apiURL, nil, c)
+	if err != nil {
+		return nil, err
+	}
+
 	client := http.Client{}
 
 	res, err := client.Do(req)
@@ -72,15 +88,69 @@ func GetDNSEntry(c *config.Config) (*DNSEntry, error) {
 		return nil, err
 	}
 
-	entry := &DNSEntry{}
-	err = json.Unmarshal(responseText, entry)
+	response := &ZoneResponse{}
+	err = json.Unmarshal(responseText, response)
 	if err != nil {
 		return nil, err
 	}
 
-	return entry, nil
+	// Request was successful but result was not
+	if response.Success == false {
+		errs := ""
+		for _, e := range response.Errors {
+			errs = errs + e.String()
+		}
+		return nil, errors.New(errs)
+	}
+
+	if len(response.Result) == 0 {
+		return nil, errors.New("No DNS records in Cloudflare API response")
+	}
+
+	return &response.Result[0], nil
 }
 
-func UpdateDNSEntry(c *config.Config, ip string) (bool, error) {
-	return false, nil
+func UpdateDNSEntry(dns *DNSRecordDetails, c *config.Config) (bool, error) {
+	path := fmt.Sprintf("zones/%s/dns_records/%s", c.ZoneID, dns.ID)
+	apiURL, err := url.Parse(baseURL + path)
+	if err != nil {
+		return false, err
+	}
+
+	payload, err := json.Marshal(dns)
+	if err != nil {
+		return false, err
+	}
+
+	req, err := newRequest("PUT", apiURL, payload, c)
+	if err != nil {
+		return false, err
+	}
+
+	client := http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		return false, err
+	}
+	defer res.Body.Close()
+	responseText, err := io.ReadAll(res.Body)
+	if err != nil {
+		return false, err
+	}
+
+	response := &APIResponse{}
+	err = json.Unmarshal(responseText, response)
+	if err != nil {
+		return false, err
+	}
+
+	if len(response.Errors) > 0 {
+		errs := make([]string, 0, 3)
+		for _, e := range response.Errors {
+			errs = append(errs, e.String())
+		}
+		return false, errors.New(strings.Join(errs, " :: "))
+	}
+
+	return response.Success, nil
 }

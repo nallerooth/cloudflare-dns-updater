@@ -34,14 +34,8 @@ func loadConfig(filename string) (*config.Config, error) {
 	return c, nil
 }
 
-func compareIPAddrs(ip string, entry *cf.DNSEntry) bool {
-	for _, record := range entry.Result {
-		if strings.Compare(ip, record.Content) == 0 {
-			return true
-		}
-	}
-
-	return false
+func compareIPAddrs(ip string, dns *cf.DNSRecordDetails) bool {
+	return strings.Compare(ip, dns.Content) == 0
 }
 
 func main() {
@@ -55,19 +49,27 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Unable to get external IP address: %s", err)
 	}
 
-	fmt.Println("External IP Address", ip)
+	log.Println("External IP Address", ip)
 
-	dnsEntries, err := cf.GetDNSEntry(conf)
+	dns, err := cf.GetDNSEntry(conf)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s", err)
+		log.Fatalln(err)
 	}
 
-	fmt.Printf("%+v\n", dnsEntries)
-
-	if compareIPAddrs(ip, dnsEntries) {
+	if compareIPAddrs(ip, dns) {
 		log.Println("Correct IP address in DNS record. Going to sleep..")
 	} else {
-		log.Println("Cloudflare IP does not match external IP -> Updating CF to", ip)
-		cf.UpdateDNSEntry(conf, ip)
+		log.Printf("Cloudflare IP (%s) does not match external IP -> Updating CF to %s", dns.Content, ip)
+		dns.Content = ip
+		success, err := cf.UpdateDNSEntry(dns, conf)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		if success {
+			log.Println("Cloudflare DNS record successfully updated")
+		} else {
+			log.Println("The DNS record failed to update, but no error was given by Cloudflare")
+		}
 	}
 }
