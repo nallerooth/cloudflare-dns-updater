@@ -1,7 +1,11 @@
 {
-	"api_token": "abc123abc123abc123abc123abc123abc123a",
-	"email":    "your.email@domain.com",
-	"zone_id":   "abc123abc123abc123abc123abc123ab",
-	"zone_name": "your.domain.com",
-    "ip_lookup_url": "https://domain.com/whats-my-ip"
+    "cloudflare": {
+        "api_token": "abc123abc123abc123abc123abc123abc123a",
+        "email":    "your.email@domain.com",
+        "zone_id":   "abc123abc123abc123abc123abc123ab",
+        "zone_name": "your.domain.com"
+    },
+    "ip_lookup_url": "https://domain.com/whats-my-ip",
+    "sleep_seconds": 60,
+    "verbose_mode": false
 }

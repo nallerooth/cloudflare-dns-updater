@@ -55,15 +55,15 @@ func newRequest(method string, reqURL *url.URL, data []byte, c *config.Config) (
 	//URL:    reqURL,
 	//Header: http.Header{},
 	//}
-	req.Header.Add("X-Auth-Email", c.Email)
-	req.Header.Add("X-Auth-Key", c.APIToken)
+	req.Header.Add("X-Auth-Email", c.Cloudflare.Email)
+	req.Header.Add("X-Auth-Key", c.Cloudflare.APIToken)
 	req.Header.Add("ContentType", "application/json")
 
 	return req, nil
 }
 
 func GetDNSEntry(c *config.Config) (*DNSRecordDetails, error) {
-	path := fmt.Sprintf("zones/%s/dns_records?name=%s", c.ZoneID, c.ZoneName)
+	path := fmt.Sprintf("zones/%s/dns_records?name=%s", c.Cloudflare.ZoneID, c.Cloudflare.ZoneName)
 
 	apiURL, err := url.Parse(baseURL + path)
 	if err != nil {
@@ -111,7 +111,7 @@ func GetDNSEntry(c *config.Config) (*DNSRecordDetails, error) {
 }
 
 func UpdateDNSEntry(dns *DNSRecordDetails, c *config.Config) (bool, error) {
-	path := fmt.Sprintf("zones/%s/dns_records/%s", c.ZoneID, dns.ID)
+	path := fmt.Sprintf("zones/%s/dns_records/%s", c.Cloudflare.ZoneID, dns.ID)
 	apiURL, err := url.Parse(baseURL + path)
 	if err != nil {
 		return false, err
