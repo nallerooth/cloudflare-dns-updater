@@ -1,6 +1,7 @@
 package iplookup
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"regexp"
@@ -26,6 +27,9 @@ func fetchPage(c *config.Config) ([]byte, error) {
 func verifyIPv4Addr(body []byte) (string, error) {
 	pattern := regexp.MustCompile(`(\d{1,3}\.){3}\d+`)
 	ip := pattern.Find(body)
+	if ip == nil {
+		return "", errors.New("No IP address found in document body")
+	}
 
 	return string(ip), nil
 }
