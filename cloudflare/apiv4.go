@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"strings"
 
-	"nallerooth.com/config"
+	"github.com/nallerooth/cloudflare-dns-updater/config"
 )
 
 const baseURL = "https://api.cloudflare.com/client/v4/"

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"regexp"
 
-	"nallerooth.com/config"
+	"github.com/nallerooth/cloudflare-dns-updater/config"
 )
 
 func fetchPage(c *config.Config) ([]byte, error) {

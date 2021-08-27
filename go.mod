@@ -1,3 +1,3 @@
-module nallerooth.com
+module github.com/nallerooth/cloudflare-dns-updater
 
-go 1.16
+go 1.17

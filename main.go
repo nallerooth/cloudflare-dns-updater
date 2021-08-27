@@ -8,10 +8,11 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
-	cf "nallerooth.com/cloudflare"
-	"nallerooth.com/config"
-	"nallerooth.com/iplookup"
+	cf "github.com/nallerooth/cloudflare-dns-updater/cloudflare"
+	"github.com/nallerooth/cloudflare-dns-updater/config"
+	"github.com/nallerooth/cloudflare-dns-updater/iplookup"
 )
 
 type options struct {
@@ -56,6 +57,43 @@ func compareIPAddrs(ip string, dns *cf.DNSRecordDetails) bool {
 	return strings.Compare(ip, dns.Content) == 0
 }
 
+func run(conf *config.Config) error {
+	ip, err := iplookup.GetExternalIPv4Address(conf)
+	if err != nil {
+		return fmt.Errorf("Unable to get external IP address: %s", err)
+	}
+
+	if conf.VerboseMode {
+		log.Println("External IP Address", ip)
+	}
+
+	dns, err := cf.GetDNSEntry(conf)
+	if err != nil {
+		return fmt.Errorf("Unable to fetch DNS entry from Cloudflare: %s", err)
+	}
+
+	if compareIPAddrs(ip, dns) {
+		if conf.VerboseMode {
+			log.Println("Cloudflare DNS record matches external IP address")
+		}
+	} else {
+		log.Printf("Cloudflare IP (%s) does not match external IP -> Updating Cloudflare DNS record to %s", dns.Content, ip)
+		dns.Content = ip
+		success, err := cf.UpdateDNSEntry(dns, conf)
+		if err != nil {
+			return fmt.Errorf("Unable to update Cloudflare DNS record: %s", err)
+		}
+
+		if success {
+			log.Println("Cloudflare DNS record successfully updated")
+		} else {
+			log.Println("The DNS record failed to update, but no error was given by Cloudflare")
+		}
+	}
+
+	return nil
+}
+
 func main() {
 	flags := getLaunchFlags()
 
@@ -70,36 +108,15 @@ func main() {
 
 	//fmt.Printf("%+v\n", conf) // TODO: Remove
 
-	ip, err := iplookup.GetExternalIPv4Address(conf)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to get external IP address: %s", err)
-	}
-
-	if conf.VerboseMode {
-		log.Println("External IP Address", ip)
-	}
-
-	dns, err := cf.GetDNSEntry(conf)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	if compareIPAddrs(ip, dns) {
-		if conf.VerboseMode {
-			log.Println("Cloudflare DNS record is already set to external IP address")
-		}
-	} else {
-		log.Printf("Cloudflare IP (%s) does not match external IP -> Updating Cloudflare DNS record to %s", dns.Content, ip)
-		dns.Content = ip
-		success, err := cf.UpdateDNSEntry(dns, conf)
-		if err != nil {
-			log.Fatalln(err)
+	for {
+		if err = run(conf); err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
 		}
 
-		if success {
-			log.Println("Cloudflare DNS record successfully updated")
-		} else {
-			log.Println("The DNS record failed to update, but no error was given by Cloudflare")
+		if !flags.watch {
+			break
 		}
+
+		time.Sleep(time.Second * time.Duration(conf.SleepSeconds))
 	}
 }
