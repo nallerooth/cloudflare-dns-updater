@@ -97,16 +97,12 @@ func run(conf *config.Config) error {
 func main() {
 	flags := getLaunchFlags()
 
-	//fmt.Printf("%+v\n", flags) // TODO: Remove
-
 	conf, err := loadConfig(flags.configPath)
 	if err != nil {
 		log.Fatalln("Unable to load config file")
 	}
 	// Allow override of verbose mode set in config file
 	conf.VerboseMode = conf.VerboseMode || flags.verbose
-
-	//fmt.Printf("%+v\n", conf) // TODO: Remove
 
 	for {
 		if err = run(conf); err != nil {

@@ -50,11 +50,7 @@ func newRequest(method string, reqURL *url.URL, data []byte, c *config.Config) (
 	if err != nil {
 		return nil, err
 	}
-	//req := &http.Request{
-	//Method: method,
-	//URL:    reqURL,
-	//Header: http.Header{},
-	//}
+
 	req.Header.Add("X-Auth-Email", c.Cloudflare.Email)
 	req.Header.Add("X-Auth-Key", c.Cloudflare.APIToken)
 	req.Header.Add("ContentType", "application/json")
