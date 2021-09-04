@@ -30,8 +30,12 @@ func LoadFromFile(filename string) (*Config, error) {
 		return nil, err
 	}
 
+	return LoadJSON(contents)
+}
+
+func LoadJSON(jsondata []byte) (*Config, error) {
 	c := &Config{}
-	err = json.Unmarshal(contents, c)
+	err := json.Unmarshal(jsondata, c)
 	if err != nil {
 		return nil, err
 	}
