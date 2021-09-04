@@ -1,10 +1,8 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"strings"
@@ -30,27 +28,6 @@ func getLaunchFlags() options {
 	flag.Parse()
 
 	return o
-}
-
-func loadConfig(filename string) (*config.Config, error) {
-	f, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	contents, err := io.ReadAll(f)
-	if err != nil {
-		return nil, err
-	}
-
-	c := &config.Config{}
-	err = json.Unmarshal(contents, c)
-	if err != nil {
-		return nil, err
-	}
-
-	return c, nil
 }
 
 func compareIPAddrs(ip string, dns *cf.DNSRecordDetails) bool {
@@ -97,7 +74,7 @@ func run(conf *config.Config) error {
 func main() {
 	flags := getLaunchFlags()
 
-	conf, err := loadConfig(flags.configPath)
+	conf, err := config.LoadFromFile(flags.configPath)
 	if err != nil {
 		log.Fatalln("Unable to load config file")
 	}
