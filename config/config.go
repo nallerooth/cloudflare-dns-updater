@@ -13,6 +13,18 @@ type Config struct {
 		ZoneID   string `json:"zone_id"`
 		ZoneName string `json:"zone_name"`
 	}
+	Notifications struct {
+		Email struct {
+			SMTP struct {
+				Server   string
+				Port     uint
+				Username string
+				Password string
+			}
+			Sender     string
+			Recipients []string
+		}
+	}
 	IPLookupURL  string `json:"ip_lookup_url"`
 	SleepSeconds int    `json:"sleep_seconds"`
 	VerboseMode  bool   `json:"verbose_mode"`
